@@ -63,6 +63,12 @@ if(${target} STREQUAL "esp32p4" OR ${target} STREQUAL "esp32s31")
     endif()
 endif() # esp32p4/esp32s31
 
+# Power management support
+if(CONFIG_PM_ENABLE)
+    list(APPEND srcs "tinyusb_pm.c")
+    list(APPEND priv_req esp_pm)
+endif() # CONFIG_PM_ENABLE
+
 # idf_component.yml is ignored when the component manager is disabled, so the
 # dependency on tinyusb must be declared here instead. It belongs in REQUIRES
 # (not PRIV_REQUIRES) because the public header tinyusb.h includes tusb.h.

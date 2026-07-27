@@ -19,6 +19,10 @@
 #include "msc_storage.h"
 #endif // CONFIG_TINYUSB_MSC_ENABLED
 
+#if (CONFIG_PM_ENABLE)
+#include "tinyusb_pm.h"
+#endif // CONFIG_PM_ENABLE
+
 const static char *TAG = "TinyUSB";
 
 /**
@@ -33,6 +37,8 @@ typedef struct {
 } tinyusb_ctx_t;
 
 static tinyusb_ctx_t s_ctx; // TinyUSB context
+
+static inline void tinyusb_pm_wrapper(tinyusb_event_id_t event);
 
 // ==================================================================================
 // ============================= TinyUSB Callbacks ==================================
@@ -53,6 +59,7 @@ void tud_mount_cb(void)
 #if (CONFIG_TINYUSB_MSC_ENABLED)
     msc_storage_mount_to_usb();
 #endif // CONFIG_TINYUSB_MSC_ENABLED
+    tinyusb_pm_wrapper(TINYUSB_EVENT_ATTACHED);
     tinyusb_event_t event = {
         .id = TINYUSB_EVENT_ATTACHED,
         .rhport = s_ctx.port,
@@ -76,6 +83,7 @@ void tud_umount_cb(void)
 #if (CONFIG_TINYUSB_MSC_ENABLED)
     msc_storage_mount_to_app();
 #endif // CONFIG_TINYUSB_MSC_ENABLED
+    tinyusb_pm_wrapper(TINYUSB_EVENT_DETACHED);
     tinyusb_event_t event = {
         .id = TINYUSB_EVENT_DETACHED,
         .rhport = s_ctx.port,
@@ -98,6 +106,7 @@ void tud_umount_cb(void)
  */
 void tud_suspend_cb(bool remote_wakeup_en)
 {
+    tinyusb_pm_wrapper(TINYUSB_EVENT_SUSPENDED);
     tinyusb_event_t event = {
         .id = TINYUSB_EVENT_SUSPENDED,
         .rhport = s_ctx.port,
@@ -125,6 +134,7 @@ void tud_suspend_cb(bool remote_wakeup_en)
  */
 void tud_resume_cb(void)
 {
+    tinyusb_pm_wrapper(TINYUSB_EVENT_RESUMED);
     tinyusb_event_t event = {
         .id = TINYUSB_EVENT_RESUMED,
         .rhport = s_ctx.port,
@@ -135,6 +145,32 @@ void tud_resume_cb(void)
     }
 }
 #endif // CONFIG_TINYUSB_RESUME_CALLBACK
+
+// ==================================================================================
+// ============================== Power management ==================================
+// ==================================================================================
+
+static inline void tinyusb_pm_wrapper(tinyusb_event_id_t event)
+{
+#if (CONFIG_PM_ENABLE)
+    tinyusb_pm_on_event(event);
+#endif // CONFIG_PM_ENABLE
+}
+
+#if !CONFIG_TINYUSB_SUSPEND_CALLBACK && CONFIG_PM_ENABLE
+void tinyusb_pm_suspended(void)
+{
+    tinyusb_pm_on_suspend();
+}
+#endif // !CONFIG_TINYUSB_SUSPEND_CALLBACK && CONFIG_PM_ENABLE
+
+#if !CONFIG_TINYUSB_RESUME_CALLBACK && CONFIG_PM_ENABLE
+void tinyusb_pm_resumed(void)
+{
+    tinyusb_pm_on_resume();
+}
+#endif // !CONFIG_TINYUSB_RESUME_CALLBACK && CONFIG_PM_ENABLE
+
 
 // ==================================================================================
 // ============================= ESP TinyUSB Driver =================================
@@ -159,6 +195,9 @@ esp_err_t tinyusb_driver_install(const tinyusb_config_t *config)
 {
     ESP_RETURN_ON_ERROR(tinyusb_check_config(config), TAG, "TinyUSB configuration check failed");
     ESP_RETURN_ON_ERROR(tinyusb_task_check_config(&config->task), TAG, "TinyUSB task configuration check failed");
+#if (CONFIG_PM_ENABLE)
+    ESP_RETURN_ON_ERROR(tinyusb_pm_init(&config->pm), TAG, "TinyUSB PM initialization failed");
+#endif // CONFIG_PM_ENALBE
 
     esp_err_t ret;
     usb_phy_handle_t phy_hdl = NULL;
@@ -225,6 +264,9 @@ esp_err_t tinyusb_driver_install(const tinyusb_config_t *config)
     return ESP_OK;
 
 del_phy:
+#if (CONFIG_PM_ENABLE)
+    tinyusb_pm_deinit();
+#endif // CONFIG_PM_ENABLE
     if (!config->phy.skip_setup) {
         usb_del_phy(phy_hdl);
     }
@@ -234,6 +276,9 @@ del_phy:
 esp_err_t tinyusb_driver_uninstall(void)
 {
     ESP_RETURN_ON_ERROR(tinyusb_task_stop(), TAG, "Deinit TinyUSB task failed");
+#if (CONFIG_PM_ENABLE)
+    ESP_RETURN_ON_ERROR(tinyusb_pm_deinit(), TAG, "Deinit TinyUSB PM failed");
+#endif // CONFIG_PM_ENABLE
     if (s_ctx.phy_hdl) {
         ESP_RETURN_ON_ERROR(usb_del_phy(s_ctx.phy_hdl), TAG, "Unable to delete PHY");
         s_ctx.phy_hdl = NULL;

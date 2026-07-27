@@ -85,6 +85,16 @@ extern "C" {
 #define TINYUSB_DEFAULT_TASK_PRIO      5
 
 /**
+ * @brief Initialize TinyUSB power management configuration with default values.
+ *
+ * The PM lock is disabled by default.
+ */
+#define TINYUSB_PM_DEFAULT()                            \
+    (tinyusb_pm_config_t) {                           \
+        .no_light_sleep_lock = false,                 \
+    }
+
+/**
  * @brief Initialize a full-speed TinyUSB driver configuration.
  *
  * The resulting initializer uses the default PHY settings, default task
@@ -111,6 +121,7 @@ extern "C" {
             .full_speed_config = NULL,                  \
             .high_speed_config = NULL,                  \
         },                                              \
+        .pm = TINYUSB_PM_DEFAULT(),                     \
         .event_cb = (event_hdl),                        \
         .event_arg = (arg),                             \
     }
@@ -147,6 +158,7 @@ extern "C" {
             .full_speed_config = NULL,                  \
             .high_speed_config = NULL,                  \
         },                                              \
+        .pm = TINYUSB_PM_DEFAULT(),                     \
         .event_cb = (event_hdl),                        \
         .event_arg = (arg),                             \
     }

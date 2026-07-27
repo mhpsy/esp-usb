@@ -112,6 +112,14 @@ typedef struct {
 typedef void (*tinyusb_event_cb_t)(tinyusb_event_t *event, void *arg);
 
 /**
+ * @brief TinyUSB power management configuration.
+ */
+typedef struct {
+    bool no_light_sleep_lock;                /*!< Acquire ESP_PM_NO_LIGHT_SLEEP while the USB device is
+                                                 configured by the host and the bus is not suspended. */
+} tinyusb_pm_config_t;
+
+/**
  * @brief TinyUSB driver configuration.
  */
 typedef struct {
@@ -119,6 +127,7 @@ typedef struct {
     tinyusb_phy_config_t phy;                /*!< USB PHY configuration. */
     tinyusb_task_config_t task;              /*!< USB device task configuration. */
     tinyusb_desc_config_t descriptor;        /*!< USB descriptor configuration. */
+    tinyusb_pm_config_t pm;                  /*!< Power management configuration. */
     tinyusb_event_cb_t event_cb;             /*!< Optional event callback. */
     void *event_arg;                         /*!< User argument passed to `event_cb`. */
 } tinyusb_config_t;
@@ -202,6 +211,38 @@ esp_err_t tinyusb_set_otg_suspend_state(bool in_suspend);
  *      - ESP_ERR_NOT_SUPPORTED if USB wakeup is not supported on the current target or IDF release
  */
 esp_err_t tinyusb_clear_otg_wakeup_status(void);
+
+#if !CONFIG_TINYUSB_SUSPEND_CALLBACK && CONFIG_PM_ENABLE
+/**
+ * @brief Update PM lock on suspend event, in case the tud_suspend_cb() is not defined by esp_tinyusb but by the user
+ * @note In case the the user defines it's own suspend callback and wants to use the power management,
+ *       this function shall be called by the user inside the custom definition of the tud_suspend_cb()
+ *
+ * @code{c}
+ * void tud_suspend_cb(bool remote_wakeup_en) {
+ *   tinyusb_pm_suspended();
+ *   ...
+ * }
+ * @endcode
+ */
+void tinyusb_pm_suspended(void);
+#endif // !CONFIG_TINYUSB_SUSPEND_CALLBACK && CONFIG_PM_ENABLE
+
+#if !CONFIG_TINYUSB_RESUME_CALLBACK && CONFIG_PM_ENABLE
+/**
+ * @brief Update PM lock on resume event, in case the tud_resume_cb() is not defined by esp_tinyusb but by the user
+ * @note In case the the user defines it's own resume callback and wants to use the power management,
+ *       this function shall be called by the user inside the custom definition of the tud_resume_cb()
+ *
+ * @code{c}
+ * void tud_resume_cb(void) {
+ *   tinyusb_pm_resumed();
+ *   ...
+ * }
+ * @endcode
+ */
+void tinyusb_pm_resumed(void);
+#endif // !CONFIG_TINYUSB_RESUME_CALLBACK && CONFIG_PM_ENABLE
 
 #ifdef __cplusplus
 }
