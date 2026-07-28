@@ -204,6 +204,7 @@ static tinyusb_config_t test_pm_init_tinyusb_cdc(tusb_cdcacm_callback_t rx_cb)
     test_pm_sync_init();
 
     tinyusb_config_t tusb_cfg = TINYUSB_DEFAULT_CONFIG(device_event_handler);
+    tusb_cfg.pm.no_light_sleep_lock = true;
     tusb_cfg.descriptor.device = &cdc_device_descriptor;
     tusb_cfg.descriptor.full_speed_config = cdc_desc_configuration_remote_wakeup;
 #if (TUD_OPT_HIGH_SPEED)
@@ -383,20 +384,17 @@ TEST_CASE("tinyusb_light_sleep_usb_wakeup", "[esp_tinyusb][device_esp_sleep_ligh
     fflush(stdout);
     vTaskDelay(10);
 
-    // Enter light sleep
-    TEST_ASSERT_EQUAL(ESP_OK, tinyusb_set_otg_suspend_state(true));
+    // Enter light sleep (OTG suspend state is prepared by esp_tinyusb PM on USB suspend)
     TEST_ASSERT_EQUAL(ESP_OK, esp_light_sleep_start());
 
     // Pytest wakes up the SoC, find out the wakeup reason
     const uint32_t wakeup_causes = esp_sleep_get_wakeup_causes();
     TEST_ASSERT_TRUE_MESSAGE(wakeup_causes & BIT(ESP_SLEEP_WAKEUP_USB), "Expected to wake from USB during light sleep");
 
-    // Expect resume event
+    // Expect resume event (OTG state is restored by esp_tinyusb PM on USB resume/light sleep exit)
     expect_device_event(EVENT_BITS_RESUMED, pdMS_TO_TICKS(DEVICE_EVENT_WAIT_MS));
 
     // Disable all light sleep related settings
-    TEST_ASSERT_EQUAL(ESP_OK, tinyusb_set_otg_suspend_state(false));
-    TEST_ASSERT_EQUAL(ESP_OK, tinyusb_clear_otg_wakeup_status());
     TEST_ASSERT_EQUAL(ESP_OK, esp_sleep_disable_usb_wakeup());
     TEST_ASSERT_EQUAL(ESP_OK, esp_sleep_cpu_retention_deinit());
 

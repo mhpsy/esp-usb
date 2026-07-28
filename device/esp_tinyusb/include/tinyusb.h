@@ -116,8 +116,10 @@ typedef void (*tinyusb_event_cb_t)(tinyusb_event_t *event, void *arg);
  * @brief TinyUSB power management configuration.
  */
 typedef struct {
-    bool no_light_sleep_lock;                /*!< Acquire ESP_PM_NO_LIGHT_SLEEP while the USB device is
-                                                 configured by the host and the bus is not suspended. */
+    bool no_light_sleep_lock;                /*!< Acquire ESP_PM_NO_LIGHT_SLEEP while the TinyUSB driver is
+                                                 installed and the USB bus is not suspended. On supported
+                                                 high-speed targets this also manages UTMI OTG suspend state
+                                                 for automatic light sleep and USB wakeup. */
 } tinyusb_pm_config_t;
 
 /**
@@ -183,6 +185,11 @@ esp_err_t tinyusb_remote_wakeup(void);
 
 /**
  * @brief Set USB OTG suspend state for light-sleep wakeup handling.
+ *
+ * @note When `tinyusb_config_t.pm.no_light_sleep_lock` is enabled on supported high-speed
+ *       targets, esp_tinyusb registers light-sleep enter/exit callbacks and manages
+ *       `tinyusb_set_otg_suspend_state()` / `tinyusb_clear_otg_wakeup_status()` on USB
+ *       suspend and resume. Manual calls are only needed when the PM lock is disabled.
  *
  * Call with `true` before entering light sleep while the USB bus is suspended,
  * and with `false` after waking up.

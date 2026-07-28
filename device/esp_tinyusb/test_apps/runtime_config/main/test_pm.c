@@ -97,10 +97,10 @@ TEST_CASE("PM: status API validation", "[runtime_config][full_speed][high_speed]
 /**
  * @brief TinyUSB PM specific testcase
  *
- * Scenario: PM lock is acquired only after the host configures the device
- * Awaiting: Lock reference count is 0 before attach and 1 after enumeration
+ * Scenario: PM lock is held while the driver is installed, including before host attach
+ * Awaiting: Lock reference count is 1 after install and remains 1 after enumeration
  */
-TEST_CASE("PM: lock acquired on attach", "[runtime_config][full_speed][high_speed]")
+TEST_CASE("PM: lock held on install", "[runtime_config][full_speed][high_speed]")
 {
     esp_pm_lock_instance_stats_t stats;
     tinyusb_config_t tusb_cfg = TINYUSB_DEFAULT_CONFIG(test_device_event_handler);
@@ -108,7 +108,7 @@ TEST_CASE("PM: lock acquired on attach", "[runtime_config][full_speed][high_spee
     TEST_ASSERT_EQUAL(ESP_OK, tinyusb_driver_install(&tusb_cfg));
 
     TEST_ASSERT_EQUAL(ESP_OK, tinyusb_pm_status(&stats));
-    TEST_ASSERT_EQUAL(0, stats.acquired);
+    TEST_ASSERT_EQUAL(1, stats.acquired);
 
     test_device_wait();
 
@@ -320,13 +320,13 @@ TEST_CASE("PM: check lock status", "[pm][full_speed][high_speed]")
     tusb_cfg.pm.no_light_sleep_lock = true;
     TEST_ASSERT_EQUAL(ESP_OK, tinyusb_driver_install(&tusb_cfg));
 
-    // Lock should not be acquired when device is not attached
+    // Lock should be acquired while waiting for host attach
     TEST_ASSERT_EQUAL(ESP_OK, tinyusb_pm_status(&stats));
-    TEST_ASSERT_EQUAL(0, stats.acquired);
+    TEST_ASSERT_EQUAL(1, stats.acquired);
 
     test_device_wait();
 
-    // Lock should be acquired when device is attached
+    // Lock should remain acquired when device is attached
     TEST_ASSERT_EQUAL(ESP_OK, tinyusb_pm_status(&stats));
     TEST_ASSERT_EQUAL(1, stats.acquired);
 

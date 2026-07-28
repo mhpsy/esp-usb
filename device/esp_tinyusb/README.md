@@ -258,28 +258,42 @@ If any descriptor field is set to `NULL`, default descriptor will be assigned du
 On high-speed ports (ESP32-P4 HS port and ESP32-S31), the device can wake from light sleep on USB activity while the bus is suspended.
 The feature is **NOT** available on FS/LS only ports due to PHY limitations.
 
-Before using light sleep, configure the sleep subsystem:
+Before using light sleep, configure the sleep subsystem and enable automatic light sleep in the application:
 
 ```c
+  esp_pm_config_t pm_config = {
+      .max_freq_mhz = CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ,
+      .min_freq_mhz = CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ,
+      .light_sleep_enable = true,
+  };
+  ESP_ERROR_CHECK(esp_pm_configure(&pm_config));
+
   esp_sleep_cpu_retention_init();
   esp_sleep_enable_usb_wakeup();
   esp_sleep_pd_config(ESP_PD_DOMAIN_CNNT, ESP_PD_OPTION_ON);
 ```
 
-When the host suspends the device, prepare the UTMI PHY, enter light sleep, and restore the PHY state afterward:
+Install TinyUSB with the PM lock enabled. esp_tinyusb then releases the PM lock on USB suspend, registers light-sleep enter/exit callbacks, and manages the UTMI OTG suspend state needed for USB wakeup:
+
+```c
+  tinyusb_config_t tusb_cfg = TINYUSB_DEFAULT_CONFIG(event_handler);
+  tusb_cfg.pm.no_light_sleep_lock = true;
+  ESP_ERROR_CHECK(tinyusb_driver_install(&tusb_cfg));
+```
+
+For manual light sleep entry from `tud_suspend_cb()`, OTG preparation is already done on suspend when the PM lock is enabled:
 
 ```c
   void tud_suspend_cb(bool remote_wakeup_en)
   {
-      ESP_ERROR_CHECK(tinyusb_set_otg_suspend_state(true));
       esp_err_t err = esp_light_sleep_start();
       if (err != ESP_OK) {
           // Handle ESP_ERR_SLEEP_REJECT or other errors as needed
       }
-      ESP_ERROR_CHECK(tinyusb_set_otg_suspend_state(false));
-      ESP_ERROR_CHECK(tinyusb_clear_otg_wakeup_status());
   }
 ```
+
+The public `tinyusb_set_otg_suspend_state()` and `tinyusb_clear_otg_wakeup_status()` helpers remain available for applications that do not use `no_light_sleep_lock`.
 
 ### USB PHY configuration & Self-Powered Device
 
