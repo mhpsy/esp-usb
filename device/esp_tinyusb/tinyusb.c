@@ -159,16 +159,21 @@ static inline void tinyusb_pm_wrapper(tinyusb_event_id_t event)
 }
 
 #if !CONFIG_TINYUSB_SUSPEND_CALLBACK && CONFIG_PM_ENABLE
-void tinyusb_pm_suspended(void)
+esp_err_t tinyusb_pm_notify_suspended(void)
 {
-    tinyusb_pm_on_suspend();
+    ESP_RETURN_ON_FALSE(tud_inited(), ESP_ERR_INVALID_STATE, TAG, "TinyUSB driver is not installed");
+    ESP_RETURN_ON_FALSE(tud_suspended(), ESP_ERR_NOT_ALLOWED, TAG, "USB device is not suspended");
+    return tinyusb_pm_on_suspend();
 }
 #endif // !CONFIG_TINYUSB_SUSPEND_CALLBACK && CONFIG_PM_ENABLE
 
 #if !CONFIG_TINYUSB_RESUME_CALLBACK && CONFIG_PM_ENABLE
-void tinyusb_pm_resumed(void)
+esp_err_t tinyusb_pm_notify_resumed(void)
 {
-    tinyusb_pm_on_resume();
+    ESP_RETURN_ON_FALSE(tud_inited(), ESP_ERR_INVALID_STATE, TAG, "TinyUSB driver is not installed");
+    ESP_RETURN_ON_FALSE(!tud_suspended(), ESP_ERR_NOT_ALLOWED, TAG, "USB device is still suspended");
+    ESP_RETURN_ON_FALSE(tud_mounted(), ESP_ERR_NOT_ALLOWED, TAG, "USB device is not mounted");
+    return tinyusb_pm_on_resume();
 }
 #endif // !CONFIG_TINYUSB_RESUME_CALLBACK && CONFIG_PM_ENABLE
 

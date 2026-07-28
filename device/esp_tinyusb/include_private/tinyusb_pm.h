@@ -57,16 +57,24 @@ esp_err_t tinyusb_pm_lock_check(esp_pm_lock_instance_stats_t *stats);
 
 #if !CONFIG_TINYUSB_SUSPEND_CALLBACK
 /**
- * @brief Wrapper for tinyusb suspend event
+ * @brief Release PM lock on USB suspend when suspend callback is user-provided
+ *
+ * @return
+ *      - ESP_OK on success
+ *      - ESP_ERR_NOT_ALLOWED if PM lock is not enabled
  */
-void tinyusb_pm_on_suspend(void);
+esp_err_t tinyusb_pm_on_suspend(void);
 #endif // !CONFIG_TINYUSB_SUSPEND_CALLBACK
 
 #if !CONFIG_TINYUSB_RESUME_CALLBACK
 /**
- * @brief Wrapper for tinyusb resume event
+ * @brief Acquire PM lock on USB resume when resume callback is user-provided
+ *
+ * @return
+ *      - ESP_OK on success
+ *      - ESP_ERR_NOT_ALLOWED if PM lock is not enabled
  */
-void tinyusb_pm_on_resume(void);
+esp_err_t tinyusb_pm_on_resume(void);
 #endif // !CONFIG_TINYUSB_RESUME_CALLBACK
 
 

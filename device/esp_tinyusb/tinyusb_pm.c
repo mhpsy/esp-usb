@@ -135,17 +135,29 @@ esp_err_t tinyusb_pm_lock_check(esp_pm_lock_instance_stats_t *stats)
 }
 
 #if !CONFIG_TINYUSB_SUSPEND_CALLBACK
-void tinyusb_pm_on_suspend(void)
+esp_err_t tinyusb_pm_on_suspend(void)
 {
+    ESP_RETURN_ON_FALSE(s_pm_ctx.lock_enabled, ESP_ERR_NOT_ALLOWED, TAG, "PM lock is not enabled");
+
+    if (s_pm_ctx.suspended) {
+        return ESP_OK;
+    }
+
     s_pm_ctx.suspended = true;
-    tinyusb_pm_lock_release();
+    return tinyusb_pm_lock_release();
 }
 #endif // !CONFIG_TINYUSB_SUSPEND_CALLBACK
 
 #if !CONFIG_TINYUSB_RESUME_CALLBACK
-void tinyusb_pm_on_resume(void)
+esp_err_t tinyusb_pm_on_resume(void)
 {
+    ESP_RETURN_ON_FALSE(s_pm_ctx.lock_enabled, ESP_ERR_NOT_ALLOWED, TAG, "PM lock is not enabled");
+
+    if (!s_pm_ctx.suspended) {
+        return ESP_OK;
+    }
+
     s_pm_ctx.suspended = false;
-    tinyusb_pm_lock_acquire();
+    return tinyusb_pm_lock_acquire();
 }
 #endif // !CONFIG_TINYUSB_RESUME_CALLBACK

@@ -217,34 +217,49 @@ esp_err_t tinyusb_pm_status(esp_pm_lock_instance_stats_t *stats);
 
 #if !CONFIG_TINYUSB_SUSPEND_CALLBACK && CONFIG_PM_ENABLE
 /**
- * @brief Update PM lock on suspend event, in case the tud_suspend_cb() is not defined by esp_tinyusb but by the user
- * @note In case the the user defines it's own suspend callback and wants to use the power management,
- *       this function shall be called by the user inside the custom definition of the tud_suspend_cb()
+ * @brief Notify esp_tinyusb that the USB device was suspended.
+ *
+ * Call this from a user-defined `tud_suspend_cb()` when
+ * `CONFIG_TINYUSB_SUSPEND_CALLBACK` is disabled and
+ * `tinyusb_config_t.pm.no_light_sleep_lock` is enabled.
  *
  * @code{c}
  * void tud_suspend_cb(bool remote_wakeup_en) {
- *   tinyusb_pm_suspended();
- *   ...
+ *     tinyusb_pm_notify_suspended();
+ *     ...
  * }
  * @endcode
+ *
+ * @return
+ *      - ESP_OK on success
+ *      - ESP_ERR_INVALID_STATE if the TinyUSB driver is not installed
+ *      - ESP_ERR_NOT_ALLOWED if PM lock is not enabled or the USB device is not suspended
  */
-void tinyusb_pm_suspended(void);
+esp_err_t tinyusb_pm_notify_suspended(void);
 #endif // !CONFIG_TINYUSB_SUSPEND_CALLBACK && CONFIG_PM_ENABLE
 
 #if !CONFIG_TINYUSB_RESUME_CALLBACK && CONFIG_PM_ENABLE
 /**
- * @brief Update PM lock on resume event, in case the tud_resume_cb() is not defined by esp_tinyusb but by the user
- * @note In case the the user defines it's own resume callback and wants to use the power management,
- *       this function shall be called by the user inside the custom definition of the tud_resume_cb()
+ * @brief Notify esp_tinyusb that the USB device was resumed.
+ *
+ * Call this from a user-defined `tud_resume_cb()` when
+ * `CONFIG_TINYUSB_RESUME_CALLBACK` is disabled and
+ * `tinyusb_config_t.pm.no_light_sleep_lock` is enabled.
  *
  * @code{c}
  * void tud_resume_cb(void) {
- *   tinyusb_pm_resumed();
- *   ...
+ *     tinyusb_pm_notify_resumed();
+ *     ...
  * }
  * @endcode
+ *
+ * @return
+ *      - ESP_OK on success
+ *      - ESP_ERR_INVALID_STATE if the TinyUSB driver is not installed
+ *      - ESP_ERR_NOT_ALLOWED if PM lock is not enabled, the USB device is still suspended,
+ *        or the USB device is not mounted
  */
-void tinyusb_pm_resumed(void);
+esp_err_t tinyusb_pm_notify_resumed(void);
 #endif // !CONFIG_TINYUSB_RESUME_CALLBACK && CONFIG_PM_ENABLE
 
 #ifdef __cplusplus
