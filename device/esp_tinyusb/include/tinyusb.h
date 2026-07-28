@@ -11,6 +11,7 @@
 #include "soc/soc_caps.h"
 #include "tusb.h"
 #include "sdkconfig.h"
+#include "esp_pm.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -211,6 +212,8 @@ esp_err_t tinyusb_set_otg_suspend_state(bool in_suspend);
  *      - ESP_ERR_NOT_SUPPORTED if USB wakeup is not supported on the current target or IDF release
  */
 esp_err_t tinyusb_clear_otg_wakeup_status(void);
+
+esp_err_t tinyusb_pm_status(esp_pm_lock_instance_stats_t *stats);
 
 #if !CONFIG_TINYUSB_SUSPEND_CALLBACK && CONFIG_PM_ENABLE
 /**

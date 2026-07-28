@@ -21,6 +21,7 @@
 
 #if (CONFIG_PM_ENABLE)
 #include "tinyusb_pm.h"
+#include "esp_pm.h"
 #endif // CONFIG_PM_ENABLE
 
 const static char *TAG = "TinyUSB";
@@ -170,6 +171,17 @@ void tinyusb_pm_resumed(void)
     tinyusb_pm_on_resume();
 }
 #endif // !CONFIG_TINYUSB_RESUME_CALLBACK && CONFIG_PM_ENABLE
+
+esp_err_t tinyusb_pm_status(esp_pm_lock_instance_stats_t *stats)
+{
+    esp_err_t err = ESP_OK;
+    ESP_RETURN_ON_FALSE(stats, ESP_ERR_INVALID_ARG, TAG, "Stats can't be NULL");
+    ESP_RETURN_ON_FALSE(tud_inited(), ESP_ERR_INVALID_STATE, TAG, "TinyUSB driver is not installed");
+
+    ESP_RETURN_ON_ERROR(tinyusb_pm_lock_check(stats), TAG, "Error getting tinyusb's PM status");
+    return err;
+}
+
 
 
 // ==================================================================================

@@ -7,6 +7,7 @@
 #pragma once
 
 #include "esp_err.h"
+#include "esp_pm.h"
 #include "tinyusb.h"
 
 #ifdef __cplusplus
@@ -40,6 +41,19 @@ esp_err_t tinyusb_pm_deinit(void);
  * @param[in] event tinyusb event
  */
 void tinyusb_pm_on_event(tinyusb_event_id_t event);
+
+/**
+ * @brief Get TinyUSB PM lock statistics.
+ *
+ * @param[out] stats PM lock instance statistics.
+ *
+ * @return
+ *      - ESP_OK on success
+ *      - ESP_ERR_INVALID_ARG if stats is NULL
+ *      - ESP_ERR_INVALID_STATE if PM lock is not enabled
+ *      - ESP_ERR_NOT_SUPPORTED if CONFIG_PM_ENABLE is disabled
+ */
+esp_err_t tinyusb_pm_lock_check(esp_pm_lock_instance_stats_t *stats);
 
 #if !CONFIG_TINYUSB_SUSPEND_CALLBACK
 /**

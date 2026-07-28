@@ -128,6 +128,12 @@ void tinyusb_pm_on_event(tinyusb_event_id_t event)
     }
 }
 
+esp_err_t tinyusb_pm_lock_check(esp_pm_lock_instance_stats_t *stats)
+{
+    ESP_RETURN_ON_FALSE(s_pm_ctx.lock_enabled && s_pm_ctx.lock != NULL, ESP_ERR_INVALID_STATE, TAG, "PM lock is not enabled");
+    return esp_pm_lock_get_stats(s_pm_ctx.lock, stats);
+}
+
 #if !CONFIG_TINYUSB_SUSPEND_CALLBACK
 void tinyusb_pm_on_suspend(void)
 {
